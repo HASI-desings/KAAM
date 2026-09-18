@@ -1,0 +1,3 @@
+-- Seed data intentionally left empty.
+-- Category list must be confirmed by the user before categories are seeded
+-- (Phases.md Phase 0 / Phase 1 requirement) — do not invent category names.

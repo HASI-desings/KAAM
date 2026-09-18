@@ -1,0 +1,62 @@
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
+import { PageTransition } from "@/components/ui/PageTransition";
+
+export default function JobInProgress() {
+  const [progress] = useState(55); // Server-authoritative in real build; animates from previous value to new one.
+  const [pauseOpen, setPauseOpen] = useState(false);
+
+  const barColor = progress < 40 ? "#D98C3F" : progress < 80 ? "#E8A33D" : "#3E8C5A";
+
+  return (
+    <PageTransition>
+      <div className="min-h-screen px-5 py-6">
+        <h1 className="mb-1 text-xl font-bold tracking-tight">Job In Progress</h1>
+        <p className="mb-5 text-xs text-[var(--text-secondary)]">Advanced Woodwork Repair</p>
+
+        <div className="mb-2 flex justify-between text-xs">
+          <span className="font-medium">Progress</span>
+          <span className="tabular-nums font-semibold">{progress}%</span>
+        </div>
+        <div className="mb-6 h-2.5 w-full overflow-hidden rounded-full bg-[var(--border)]">
+          <motion.div
+            className="h-full rounded-full"
+            animate={{ width: `${progress}%`, backgroundColor: barColor }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          />
+        </div>
+
+        <div className="mb-6 flex items-center justify-between rounded-xl2 border border-[var(--border)] p-4">
+          <div>
+            <p className="text-xs text-[var(--text-secondary)]">Deadline</p>
+            <p className="text-sm font-semibold text-amber">23h left</p>
+          </div>
+          <span className="rounded-full bg-amber/15 px-2.5 py-1 text-[11px] font-medium text-amber">Due soon</span>
+        </div>
+
+        <div className="flex gap-3">
+          <Button variant="secondary" className="flex-1" onClick={() => setPauseOpen(true)}>
+            Pause
+          </Button>
+          <Button className="flex-1">Mark Complete</Button>
+        </div>
+
+        <Modal open={pauseOpen} onClose={() => setPauseOpen(false)} title="Pause this job?">
+          <p className="mb-5 text-sm text-[var(--text-secondary)]">
+            A second pause on this job increases the charge by 50%, applied automatically. This pause will be noted on your rating.
+          </p>
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setPauseOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" className="flex-1" onClick={() => setPauseOpen(false)}>
+              Confirm Pause
+            </Button>
+          </div>
+        </Modal>
+      </div>
+    </PageTransition>
+  );
+}
