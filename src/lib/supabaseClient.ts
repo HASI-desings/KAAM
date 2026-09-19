@@ -1,20 +1,18 @@
 /**
- * Supabase client — STUB.
- * Per Rules.md #29 and Phases.md Phase 0, this project has not been given
- * a real Supabase URL/anon key yet. Do NOT hardcode credentials here.
- * Fill VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local once
- * you provide them, then this client becomes live — no code changes needed.
+ * Supabase client. Uses a manual cast for import.meta.env instead of relying
+ * on vite/client ambient types — avoids the TS2339 build failure regardless
+ * of whether a vite-env.d.ts file is present/committed in the repo.
  */
 import { createClient } from "@supabase/supabase-js";
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const env = (import.meta as unknown as { env: Record<string, string | undefined> }).env;
+
+const url = env.VITE_SUPABASE_URL;
+const anonKey = env.VITE_SUPABASE_ANON_KEY;
 
 if (!url || !anonKey) {
-  // Intentionally not thrown at import time to allow the UI to render in
-  // demo mode without a backend connected yet.
   console.warn(
-    "[SkillX] Supabase env vars are missing. Auth/data calls will fail until VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in .env.local."
+    "[SkillX] Supabase env vars are missing. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel's Environment Variables (Settings → Environment Variables) and redeploy."
   );
 }
 
