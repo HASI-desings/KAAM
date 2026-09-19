@@ -32,6 +32,8 @@ function mapJob(row: any): Job {
 const SELECT =
   "id, client_id, worker_id, category_id, title, description, payment_type, price_min_cents, price_max_cents, deadline, status, is_boosted, progress_percent, categories(name)";
 
+const MAX_FEED_JOBS = 50;
+
 export default function JobFeed({
   onOpenJob,
   onPost,
@@ -53,12 +55,20 @@ export default function JobFeed({
   useEffect(() => {
     if (!session) return;
     setLoading(true);
+
     if (view === "browse") {
-      let query = supabase.from("jobs").select(SELECT).eq("status", "open").order("created_at", { ascending: false });
+      let query = supabase
+        .from("jobs")
+        .select(SELECT)
+        .eq("status", "open")
+        .order("created_at", { ascending: false })
+        .limit(MAX_FEED_JOBS);
+
       if (active !== "All") {
         const cat = categories.find((c) => c.name === active);
         if (cat) query = query.eq("category_id", cat.id);
       }
+
       query.then(({ data }) => {
         setJobs((data ?? []).map(mapJob));
         setLoading(false);
@@ -69,6 +79,7 @@ export default function JobFeed({
         .select(SELECT)
         .or("client_id.eq." + session.user.id + ",worker_id.eq." + session.user.id)
         .order("created_at", { ascending: false })
+        .limit(MAX_FEED_JOBS)
         .then(({ data }) => {
           setJobs((data ?? []).map(mapJob));
           setLoading(false);
@@ -79,15 +90,39 @@ export default function JobFeed({
   return (
     <PageTransition>
       <div className="min-h-screen px-4 py-6">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between gap-3">
           <h1 className="text-xl font-bold tracking-tight">{view === "browse" ? "Job Feed" : "My Jobs"}</h1>
-          <div className="flex rounded-full border border-[var(--border)] p-0.5 text-[11px] font-medium">
+          <div className="flex shrink-0 rounded-full border border-[var(--border)] p-0.5 text-[11px] font-medium">
             <button onClick={() => setView("browse")} className={"rounded-full px-3 py-1 " + (view === "browse" ? "bg-teal text-white" : "text-[var(--text-secondary)]")}>Browse</button>
             <button onClick={() => setView("mine")} className={"rounded-full px-3 py-1 " + (view === "mine" ? "bg-teal text-white" : "text-[var(--text-secondary)]")}>My Jobs</button>
           </div>
         </div>
-        {view === "browse" && <div className="mb-4 flex gap-2 overflow-x-auto pb-1">{["All", ...categories.map(c => c.name)].map(c => <button key={c} onClick={() => setActive(c)} className="relative shrink-0 rounded-full px-4 py-1.5 text-xs font-medium">{active === c && <motion.div layoutId="pill" className="absolute inset-0 rounded-full bg-teal" transition={{type:"spring", stiffness:350, damping:30}}/>}<span className={"relative z-10 " + (active===c ? "text-white" : "text-[var(--text-secondary)]")}>{c}</span></button>)}</div>}
-        {loading ? <div className="grid grid-cols-2 gap-3">{Array.from({length:4}).map((_,i)=><Skeleton key={i} className="h-32"/> )}</div> : <div className="grid grid-cols-2 gap-3">{jobs.map(job => <JobCard key={job.id} job={job} onClick={() => onOpenJob(job)}/>)}{jobs.length===0 && <p className="col-span-2 text-center text-sm text-[var(--text-secondary)]">{view === "browse" ? "No open jobs in this category yet." : <>No jobs yet — post one with the + button{onPost ? " or use the post action above." : "."}</>}</p>}</div>}
+
+        {view === "browse" && (
+          <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+            {["All", ...categories.map(c => c.name)].map(c => (
+              <button key={c} onClick={() => setActive(c)} className="relative shrink-0 rounded-full px-4 py-1.5 text-xs font-medium">
+                {active === c && <motion.div layoutId="pill" className="absolute inset-0 rounded-full bg-teal" transition={{type:"spring", stiffness:350, damping:30}}/>}
+                <span className={"relative z-10 " + (active===c ? "text-white" : "text-[var(--text-secondary)]")}>{c}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({length:6}).map((_,i)=><Skeleton key={i} className="h-32"/> )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {jobs.map(job => <JobCard key={job.id} job={job} onClick={() => onOpenJob(job)}/>)}
+            {jobs.length===0 && (
+              <p className="col-span-full text-center text-sm text-[var(--text-secondary)]">
+                {view === "browse" ? "No open jobs in this category yet." : <>No jobs yet — post one with the + button{onPost ? " or use the post action above." : "."}</>}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </PageTransition>
   );
