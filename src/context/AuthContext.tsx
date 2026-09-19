@@ -18,8 +18,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   async function ensureProfileAndWallet(userId: string) {
-    // Runs on every sign-in path (magic link, future OTP, etc.) — not tied
-    // to one specific verify function, so a row never silently fails to exist.
     await supabase.from("profiles").upsert({ id: userId }, { onConflict: "id", ignoreDuplicates: true });
     await supabase.from("wallets").upsert({ user_id: userId }, { onConflict: "user_id", ignoreDuplicates: true });
   }
@@ -28,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await ensureProfileAndWallet(userId);
     const { data } = await supabase
       .from("profiles")
-      .select("id, full_name, address, education, occupation, is_profile_complete, is_verified")
+      .select("id, full_name, address, education, occupation, is_profile_complete, is_verified, is_admin")
       .eq("id", userId)
       .maybeSingle();
     if (data) {
@@ -39,7 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         education: data.education ?? "",
         occupation: data.occupation ?? "",
         isProfileComplete: data.is_profile_complete,
-        isVerified: data.is_verified
+        isVerified: data.is_verified,
+        isAdmin: data.is_admin
       });
     }
   }

@@ -1,4 +1,14 @@
+import { motion } from "framer-motion";
+
 export function Skeleton({ className = "" }: { className?: string }) {
-  // Design.md §5: skeleton screens, never a generic spinner for known-shape content.
-  return <div className={`animate-pulse rounded-lg bg-[var(--border)] ${className}`} />;
+  return (
+    <div className={`relative overflow-hidden rounded-lg bg-[var(--border)] ${className}`}>
+      <motion.div
+        className="absolute inset-0"
+        style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)" }}
+        animate={{ x: ["-100%", "100%"] }}
+        transition={{ repeat: Infinity, duration: 1.4, ease: "linear" }}
+      />
+    </div>
+  );
 }

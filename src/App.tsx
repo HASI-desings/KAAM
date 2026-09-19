@@ -4,6 +4,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { useAuth } from "@/hooks/useAuth";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { DemoBadge } from "@/components/ui/DemoBadge";
+import { BottomNav, type NavKey } from "@/components/ui/BottomNav";
 import Login from "@/pages/auth/Login";
 import CompleteProfile from "@/pages/profile/CompleteProfile";
 import JobFeed from "@/pages/feed/JobFeed";
@@ -13,25 +14,17 @@ import JobInProgress from "@/pages/jobs/JobInProgress";
 import EscrowConfirmation from "@/pages/wallet/EscrowConfirmation";
 import Wallet from "@/pages/wallet/Wallet";
 import Chat from "@/pages/chat/Chat";
-import Ratings from "@/pages/profile/Ratings";
 import Portfolio from "@/pages/profile/Portfolio";
 import Plans from "@/pages/subscription/Plans";
 import ReviewQueue from "@/pages/admin/ReviewQueue";
 import type { Job } from "@/types";
 
-type Screen = "profile" | "feed" | "jobDetails" | "inProgress" | "escrow" | "wallet" | "chat" | "ratings" | "portfolio" | "plans" | "admin";
+type Screen = "editProfile" | "feed" | "jobDetails" | "inProgress" | "escrow" | "wallet" | "chat" | "portfolio" | "plans" | "admin";
 
-// Screens still on hardcoded demo data — not wired to Supabase yet.
-const DEMO_SCREENS: Screen[] = ["inProgress", "escrow", "chat", "ratings", "portfolio", "plans", "admin"];
-
-const NAV: { key: Screen; label: string }[] = [
-  { key: "profile", label: "Profile" }, { key: "feed", label: "Feed" }, { key: "inProgress", label: "In Progress" },
-  { key: "escrow", label: "Escrow" }, { key: "wallet", label: "Wallet" }, { key: "chat", label: "Chat" },
-  { key: "ratings", label: "Ratings" }, { key: "portfolio", label: "Portfolio" }, { key: "plans", label: "Plans" }, { key: "admin", label: "Admin" }
-];
+const DEMO_SCREENS: Screen[] = ["inProgress", "escrow", "chat", "plans", "admin"];
 
 function Shell() {
-  const { session, loading, signOut } = useAuth();
+  const { session, profile, loading } = useAuth();
   const [screen, setScreen] = useState<Screen>("feed");
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [offerOpen, setOfferOpen] = useState(false);
@@ -39,14 +32,21 @@ function Shell() {
 
   if (loading) return <div className="flex min-h-screen items-center justify-center text-sm text-[var(--text-secondary)]">Loading…</div>;
   if (!session) return <Login />;
+  if (profile && !profile.isProfileComplete) return <CompleteProfile onDone={() => setScreen("feed")} />;
+
+  function navKeyForScreen(s: Screen): NavKey {
+    if (s === "editProfile" || s === "portfolio") return "profile";
+    if (s === "jobDetails" || s === "inProgress" || s === "escrow") return "feed";
+    return s as NavKey;
+  }
 
   return (
-    <div className="app-shell border-x border-[var(--border)]">
+    <div className="app-shell border-x border-[var(--border)] pb-24">
       {DEMO_SCREENS.includes(screen) && <DemoBadge />}
 
       <ErrorBoundary key={screen}>
         <AnimatePresence mode="wait">
-          {screen === "profile" && <CompleteProfile key="profile" />}
+          {screen === "editProfile" && <CompleteProfile key="editProfile" onDone={() => setScreen("portfolio")} />}
           {screen === "feed" && <JobFeed key="feed" onOpenJob={(job) => { setSelectedJob(job); setScreen("jobDetails"); }} />}
           {screen === "jobDetails" && selectedJob && (
             <JobDetails key="jobDetails" job={selectedJob} onBack={() => setScreen("feed")} onSubmitOffer={() => setOfferOpen(true)} />
@@ -55,36 +55,30 @@ function Shell() {
           {screen === "escrow" && <EscrowConfirmation key="escrow" />}
           {screen === "wallet" && <Wallet key="wallet" />}
           {screen === "chat" && <Chat key="chat" />}
-          {screen === "ratings" && <Ratings key="ratings" />}
-          {screen === "portfolio" && <Portfolio key="portfolio" />}
+          {screen === "portfolio" && <Portfolio key="portfolio" onEditProfile={() => setScreen("editProfile")} />}
           {screen === "plans" && <Plans key="plans" />}
-          {screen === "admin" && <ReviewQueue key="admin" />}
+          {screen === "admin" && profile?.isAdmin && <ReviewQueue key="admin" />}
         </AnimatePresence>
       </ErrorBoundary>
 
       {selectedJob && <OfferSubmission jobId={selectedJob.id} open={offerOpen} onClose={() => setOfferOpen(false)} />}
 
-      {/* Collapsed by default — this is a dev tool for jumping between screens
-          during testing, not part of the real product navigation. */}
-      <div className="sticky bottom-0 border-t border-[var(--border)] bg-[var(--bg-elevated)]">
-        {devMenuOpen ? (
-          <div className="flex flex-wrap items-center gap-1 p-2">
-            {NAV.map((n) => (
-              <button
-                key={n.key}
-                onClick={() => setScreen(n.key)}
-                className={`rounded-md px-2 py-1 text-[10px] font-medium ${screen === n.key ? "bg-teal text-white" : "bg-[var(--border)] text-[var(--text-secondary)]"}`}
-              >
-                {n.label}
+      <BottomNav
+        active={navKeyForScreen(screen)}
+        isAdmin={!!profile?.isAdmin}
+        onNavigate={(key) => setScreen(key === "profile" ? "portfolio" : key)}
+      />
+
+      <div className="fixed bottom-1 left-1 z-40">
+        <button onClick={() => setDevMenuOpen((v) => !v)} className="text-[9px] text-[var(--text-secondary)]/40">⋯</button>
+        {devMenuOpen && (
+          <div className="mt-1 flex flex-col gap-1 rounded-xl2 border border-[var(--border)] bg-[var(--bg-elevated)] p-2">
+            {(["inProgress", "escrow", "plans"] as Screen[]).map((s) => (
+              <button key={s} onClick={() => setScreen(s)} className="text-left text-[10px] text-[var(--text-secondary)]">
+                {s}
               </button>
             ))}
-            <button onClick={signOut} className="rounded-md bg-danger px-2 py-1 text-[10px] font-medium text-white">Sign out</button>
-            <button onClick={() => setDevMenuOpen(false)} className="ml-auto rounded-md px-2 py-1 text-[10px] text-[var(--text-secondary)]">✕</button>
           </div>
-        ) : (
-          <button onClick={() => setDevMenuOpen(true)} className="w-full py-1.5 text-center text-[10px] text-[var(--text-secondary)]">
-            ⋯
-          </button>
         )}
       </div>
     </div>

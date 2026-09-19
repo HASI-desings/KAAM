@@ -1,5 +1,5 @@
 // Shared types. These mirror the planned Supabase schema (Phase 1).
-// Fields marked TBD depend on decisions flagged as open in Security.md §3.
+// Fields marked TBD depend on decisions flagged as open in Security.md ⚠️.
 
 export type PaymentType = "cash" | "service" | "either";
 
@@ -11,6 +11,7 @@ export interface Profile {
   occupation: string;
   isProfileComplete: boolean;
   isVerified: boolean;
+  isAdmin: boolean;
 }
 
 export interface Wallet {
@@ -57,7 +58,7 @@ export interface Rating {
   id: string;
   jobId: string;
   raterId: string;
-  ratedId: string;
+  rateeId: string;
   stars: number;
   comment?: string;
   proofUrl?: string;
