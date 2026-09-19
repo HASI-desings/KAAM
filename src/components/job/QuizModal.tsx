@@ -1,0 +1,35 @@
+import { useEffect, useState } from "react";
+import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
+import { api } from "@/lib/api";
+
+interface Question { id: string; question: string; options: string[]; }
+
+export function QuizModal({ open, onClose, categoryId }: { open: boolean; onClose: () => void; categoryId: string }) {
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<{ passed: boolean; score: number } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setLoading(true); setResult(null); setAnswers({}); setError(null);
+    api.getQuizQuestions(categoryId).then((r) => setQuestions(r.questions)).catch((e) => setError(e.message)).finally(() => setLoading(false));
+  }, [open, categoryId]);
+
+  async function submit() {
+    setSubmitting(true);
+    try { const r = await api.submitQuiz(categoryId, answers); setResult(r); }
+    catch (e) { setError((e as Error).message); }
+    finally { setSubmitting(false); }
+  }
+
+  return <Modal open={open} onClose={onClose} title="Skill verification quiz">
+    {loading ? <p className="text-sm text-[var(--text-secondary)]">Loading questions...</p> :
+     error ? <p className="text-sm text-danger">{error}</p> :
+     result ? <div className="text-center"><p className={`mb-2 text-2xl font-bold ${result.passed ? "text-success" : "text-danger"}`}>{result.score}%</p><p className="text-sm">{result.passed ? "Passed — this skill is now verified on your profile." : "Not passed — you can try again anytime."}</p><Button className="mt-4 w-full" onClick={onClose}>Done</Button></div> :
+     <div className="space-y-4">{questions.map((q, i) => <div key={q.id}><p className="mb-2 text-sm font-medium">{i + 1}. {q.question}</p><div className="space-y-1.5">{q.options.map((opt, oi) => <button key={oi} onClick={() => setAnswers((a) => ({ ...a, [q.id]: oi }))} className={`w-full rounded-xl2 border px-3 py-2 text-left text-xs ${answers[q.id] === oi ? "border-teal bg-teal/10 text-teal" : "border-[var(--border)]"}`}>{opt}</button>)}</div></div>)}<Button className="w-full" loading={submitting} disabled={Object.keys(answers).length < questions.length} onClick={submit}>Submit Quiz</Button></div>}
+  </Modal>;
+}

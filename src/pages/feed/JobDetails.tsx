@@ -1,4 +1,4 @@
-import { useEffect,useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { PageTransition } from "@/components/ui/PageTransition";
@@ -7,9 +7,23 @@ import { api } from "@/lib/api";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import type { Job } from "@/types";
-interface OfferRow{id:string;worker_id:string;offer_amount_cents:number|null;status:string;}
-export default function JobDetails({job,onBack,onSubmitOffer,onAccepted}:{job:Job;onBack:()=>void;onSubmitOffer:()=>void;onAccepted:()=>void}){const{session}=useAuth();const isOwner=session?.user.id===job.clientId;const[avgRate,setAvgRate]=useState<{hasFloor:boolean;averagePriceCents:number|null}|null>(null);const[offers,setOffers]=useState<OfferRow[]>([]);const[loadingOffers,setLoadingOffers]=useState(isOwner);const[accepting,setAccepting]=useState<string|null>(null);const[error,setError]=useState<string|null>(null);
-useEffect(()=>{api.checkAverageRate(job.categoryId).then(setAvgRate).catch(()=>setAvgRate(null));},[job.categoryId]);
-useEffect(()=>{if(!isOwner)return;supabase.from("offers").select("id, worker_id, offer_amount_cents, status").eq("job_id",job.id).eq("status","pending").then(({data})=>{setOffers(data??[]);setLoadingOffers(false);});},[isOwner,job.id]);
-async function handleAccept(offerId:string){setAccepting(offerId);setError(null);try{await api.acceptOffer(offerId);onAccepted();}catch(e){setError((e as Error).message);}finally{setAccepting(null);}}
-return <PageTransition><motion.div layoutId={"job-card-"+job.id} className="min-h-screen px-5 py-6"><button onClick={onBack} className="mb-4 text-sm text-teal">← Back</button><p className="mb-1 text-xs font-medium text-teal">{job.categoryId}</p><h1 className="mb-3 text-xl font-bold tracking-tight">{job.title}</h1><p className="mb-5 text-sm leading-relaxed text-[var(--text-secondary)]">{job.description}</p><div className="mb-6 flex items-center justify-between border-t border-[var(--border)] pt-4"><div><p className="text-xs text-[var(--text-secondary)]">Price range</p><p className="tabular-nums text-lg font-bold">Rs {job.priceMin.toLocaleString()} – {job.priceMax.toLocaleString()}</p></div>{avgRate?.hasFloor&&avgRate.averagePriceCents&&<motion.div initial={{opacity:0}} animate={{opacity:.6}} className="rounded-full border border-amber px-3 py-1 text-[11px] font-medium text-amber">Avg rate: Rs {(avgRate.averagePriceCents/100).toLocaleString()}</motion.div>}</div>{error&&<p className="mb-3 text-xs text-danger">{error}</p>}{isOwner?<div><p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Offers received</p>{loadingOffers?<div className="space-y-2"><Skeleton className="h-16"/><Skeleton className="h-16"/></div>:offers.length===0?<p className="text-sm text-[var(--text-secondary)]">No offers yet — check back soon.</p>:<div className="space-y-2">{offers.map(o=><div key={o.id} className="flex items-center justify-between rounded-xl2 border border-[var(--border)] p-3"><p className="tabular-nums text-sm font-semibold">Rs {((o.offer_amount_cents??0)/100).toLocaleString()}</p><Button loading={accepting===o.id} disabled={accepting!==null&&accepting!==o.id} onClick={()=>handleAccept(o.id)}>Accept</Button></div>)}</div>}</div>:<Button className="w-full" onClick={onSubmitOffer}>Submit Offer</Button>}</motion.div></PageTransition>;}
+
+interface OfferRow { id: string; worker_id: string; offer_amount_cents: number | null; status: string; }
+
+export default function JobDetails({job,onBack,onSubmitOffer,onAccepted}:{job:Job;onBack:()=>void;onSubmitOffer:()=>void;onAccepted:()=>void}){
+ const {session}=useAuth(); const isOwner=session?.user.id===job.clientId;
+ const [avgRate,setAvgRate]=useState<{hasFloor:boolean;averagePriceCents:number|null}|null>(null);
+ const [offers,setOffers]=useState<OfferRow[]>([]); const [loadingOffers,setLoadingOffers]=useState(isOwner);
+ const [accepting,setAccepting]=useState<string|null>(null); const [error,setError]=useState<string|null>(null);
+ const [boosting,setBoosting]=useState(false); const [boostError,setBoostError]=useState<string|null>(null);
+ useEffect(()=>{api.checkAverageRate(job.categoryId).then(setAvgRate).catch(()=>setAvgRate(null));},[job.categoryId]);
+ useEffect(()=>{if(!isOwner)return; supabase.from("offers").select("id, worker_id, offer_amount_cents, status").eq("job_id",job.id).eq("status","pending").then(({data})=>{setOffers(data??[]);setLoadingOffers(false);});},[isOwner,job.id]);
+ async function handleAccept(offerId:string){setAccepting(offerId);setError(null);try{await api.acceptOffer(offerId);onAccepted();}catch(e){setError((e as Error).message);}finally{setAccepting(null);}}
+ async function handleBoost(){setBoosting(true);setBoostError(null);try{await api.boostJob(job.id);}catch(e){setBoostError((e as Error).message);}finally{setBoosting(false);}}
+ return <PageTransition><motion.div layoutId={"job-card-"+job.id} className="min-h-screen px-5 py-6"><button onClick={onBack} className="mb-4 text-sm text-teal">← Back</button><p className="mb-1 text-xs font-medium text-teal">{job.categoryId}</p><h1 className="mb-3 text-xl font-bold tracking-tight">{job.title}</h1><p className="mb-5 text-sm leading-relaxed text-[var(--text-secondary)]">{job.description}</p>
+ <div className="mb-6 flex items-center justify-between border-t border-b border-[var(--border)] pt-4 pb-4"><div><p className="text-xs text-[var(--text-secondary)]">Price range</p><p className="tabular-nums text-lg font-bold">Rs {job.priceMin.toLocaleString()} — {job.priceMax.toLocaleString()}</p></div>{avgRate?.hasFloor&&avgRate.averagePriceCents&&<motion.div initial={{opacity:0}} animate={{opacity:1}} className="rounded-full border border-amber px-3 py-1 text-[11px] font-medium text-amber">Avg rate: Rs {(avgRate.averagePriceCents/100).toLocaleString()}</motion.div>}</div>
+ {isOwner&&!job.boosted&&<div className="mb-6">{boostError&&<p className="mb-2 text-xs text-danger">{boostError}</p>}<Button variant="secondary" className="w-full" loading={boosting} onClick={handleBoost}>Boost this listing</Button></div>}
+ {error&&<p className="mb-3 text-xs text-danger">{error}</p>}
+ {isOwner?<div><p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Offers received</p>{loadingOffers?<div className="space-y-2"><Skeleton className="h-16"/><Skeleton className="h-16"/></div>:offers.length===0?<p className="text-sm text-[var(--text-secondary)]">No offers yet — check back soon.</p>:<div className="space-y-2">{offers.map(o=><div key={o.id} className="flex items-center justify-between rounded-xl2 border border-[var(--border)] p-3"><p className="tabular-nums text-sm font-semibold">Rs {((o.offer_amount_cents??0)/100).toLocaleString()}</p><Button loading={accepting===o.id} disabled={accepting!==null&&accepting!==o.id} onClick={()=>handleAccept(o.id)}>Accept</Button></div>)}</div>}<Button className="mt-4 w-full" onClick={onSubmitOffer}>Submit Offer</Button></div>:null}
+ </motion.div></PageTransition>;
+}
