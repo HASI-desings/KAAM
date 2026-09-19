@@ -1,59 +1,27 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useAuth } from "@/hooks/useAuth";
 
-const fieldVariants = {
-  hidden: { opacity: 0, y: 8 },
-  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.05, type: "spring", stiffness: 300, damping: 24 } })
-};
-
 export default function Login() {
-  const { sendOtp, verifyOtp } = useAuth();
+  const { sendMagicLink } = useAuth();
   const [email, setEmail] = useState("");
-  const [mode, setMode] = useState<"credentials" | "otp">("credentials");
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [otpError, setOtpError] = useState(false);
+  const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  async function handleSendOtp() {
-    if (!email.includes("@")) return setServerError("Enter a valid email");
+  async function handleSend() {
+    if (!email.includes("@")) return setError("Enter a valid email");
     setSending(true);
-    setServerError(null);
+    setError(null);
     try {
-      await sendOtp(email);
-      setMode("otp");
+      await sendMagicLink(email);
+      setSent(true);
     } catch (e) {
-      setServerError((e as Error).message);
+      setError((e as Error).message);
     } finally {
       setSending(false);
-    }
-  }
-
-  function handleOtpChange(i: number, val: string) {
-    if (!/^[0-9]?$/.test(val)) return;
-    const next = [...otp];
-    next[i] = val;
-    setOtp(next);
-    if (val && i < 5) document.getElementById(`otp-${i + 1}`)?.focus();
-  }
-
-  async function submitOtp() {
-    const code = otp.join("");
-    if (code.length < 6) {
-      setOtpError(true);
-      setTimeout(() => setOtpError(false), 500);
-      return;
-    }
-    try {
-      await verifyOtp(email, code);
-      // AuthContext picks up the new session automatically; router redirects on session change.
-    } catch (e) {
-      setServerError((e as Error).message);
-      setOtpError(true);
-      setTimeout(() => setOtpError(false), 500);
     }
   }
 
@@ -65,53 +33,38 @@ export default function Login() {
         </motion.h1>
 
         <div className="w-full max-w-sm rounded-xl2 border border-[var(--border)] bg-[var(--bg-elevated)] p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
-          {mode === "credentials" ? (
-            <div className="space-y-4">
-              <motion.div custom={0} initial="hidden" animate="visible" variants={fieldVariants}>
-                <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">Email</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl2 border border-[var(--border)] bg-transparent px-3 py-2.5 text-sm outline-none focus:border-teal"
-                />
-              </motion.div>
-              {serverError && <p className="text-xs text-danger">{serverError}</p>}
-              <Button className="w-full" disabled={sending} onClick={handleSendOtp}>
-                {sending ? "Sending code..." : "Continue"}
-              </Button>
-              <p className="text-center text-[10px] text-[var(--text-secondary)]">
-                Mobile OTP pending SMS-provider decision — email OTP is live now.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-5">
-              <p className="text-sm text-[var(--text-secondary)]">Enter the 6-digit code sent to {email}.</p>
-              <motion.div
-                animate={otpError ? { x: [0, -8, 8, -6, 6, 0] } : { x: 0 }}
-                transition={{ type: "spring", stiffness: 500, damping: 12 }}
-                className="flex justify-between gap-2"
-              >
-                {otp.map((digit, i) => (
+          <AnimatePresence mode="wait">
+            {!sent ? (
+              <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">Email</label>
                   <input
-                    key={i}
-                    id={`otp-${i}`}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(i, e.target.value)}
-                    maxLength={1}
-                    className={`h-12 w-11 rounded-xl2 border text-center text-lg font-semibold outline-none ${
-                      otpError ? "border-danger" : "border-[var(--border)] focus:border-teal"
-                    }`}
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-xl2 border border-[var(--border)] bg-transparent px-3 py-2.5 text-sm outline-none focus:border-teal"
                   />
-                ))}
+                </div>
+                {error && <p className="text-xs text-danger">{error}</p>}
+                <Button className="w-full" disabled={sending} onClick={handleSend}>
+                  {sending ? "Sending link..." : "Send sign-in link"}
+                </Button>
+                <p className="text-center text-[10px] text-[var(--text-secondary)]">
+                  We'll email you a link — no password, no code to type. Mobile sign-in is pending an SMS provider decision.
+                </p>
               </motion.div>
-              {serverError && <p className="text-xs text-danger">{serverError}</p>}
-              <Button className="w-full" onClick={submitOtp}>Verify</Button>
-              <button className="w-full text-center text-xs text-teal underline underline-offset-2" onClick={handleSendOtp}>
-                Resend code
-              </button>
-            </div>
-          )}
+            ) : (
+              <motion.div key="sent" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 text-center">
+                <p className="text-sm font-semibold">Check your email</p>
+                <p className="text-xs text-[var(--text-secondary)]">
+                  We sent a sign-in link to <span className="font-medium">{email}</span>. Open it on this device to continue.
+                </p>
+                <button onClick={() => setSent(false)} className="text-xs text-teal underline underline-offset-2">
+                  Use a different email
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </PageTransition>
