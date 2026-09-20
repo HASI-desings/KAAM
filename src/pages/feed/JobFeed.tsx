@@ -61,6 +61,7 @@ export default function JobFeed({
         .from("jobs")
         .select(SELECT)
         .eq("status", "open")
+        .neq("client_id", session.user.id)
         .order("created_at", { ascending: false })
         .limit(MAX_FEED_JOBS);
 
@@ -118,7 +119,7 @@ export default function JobFeed({
             {jobs.map(job => <JobCard key={job.id} job={job} onClick={() => onOpenJob(job)}/>)}
             {jobs.length===0 && (
               <p className="col-span-full text-center text-sm text-[var(--text-secondary)]">
-                {view === "browse" ? "No open jobs in this category yet." : <>No jobs yet — post one with the + button{onPost ? " or use the post action above." : "."}</>}
+                {view === "browse" ? "No open jobs in this category yet." : <>No jobs yet â post one with the + button{onPost ? " or use the post action above." : "."}</>}
               </p>
             )}
           </div>

@@ -13,12 +13,13 @@ import { OfferSubmission } from "@/pages/jobs/OfferSubmission";
 import JobInProgress from "@/pages/jobs/JobInProgress";
 import Wallet from "@/pages/wallet/Wallet";
 import Chat from "@/pages/chat/Chat";
+import ChatInbox from "@/pages/chat/ChatInbox";
 import Portfolio from "@/pages/profile/Portfolio";
 import Plans from "@/pages/subscription/Plans";
 import ReviewQueue from "@/pages/admin/ReviewQueue";
 import type { Job } from "@/types";
 
-type Screen = "editProfile" | "feed" | "jobDetails" | "post" | "inProgress" | "wallet" | "chat" | "portfolio" | "plans" | "admin";
+type Screen = "editProfile" | "feed" | "jobDetails" | "post" | "inProgress" | "wallet" | "chat" | "chatThread" | "portfolio" | "plans" | "admin";
 
 function Shell() {
   const { session, profile, loading } = useAuth();
@@ -26,7 +27,7 @@ function Shell() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [offerOpen, setOfferOpen] = useState(false);
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center text-sm text-[var(--text-secondary)]">Loading…</div>;
+  if (loading) return <div className="flex min-h-screen items-center justify-center text-sm text-[var(--text-secondary)]">Loadingâ¦</div>;
   if (!session) return <Login />;
   if (profile && !profile.isProfileComplete) return <CompleteProfile onDone={() => setScreen("feed")} />;
 
@@ -34,6 +35,7 @@ function Shell() {
     if (s === "editProfile" || s === "portfolio") return "profile";
     if (s === "jobDetails" || s === "inProgress") return "feed";
     if (s === "post") return "post";
+    if (s === "chatThread") return "chat";
     return s as NavKey;
   }
 
@@ -46,7 +48,8 @@ function Shell() {
         {screen === "jobDetails" && selectedJob && <JobDetails key="jobDetails" job={selectedJob} onBack={() => setScreen("feed")} onSubmitOffer={() => setOfferOpen(true)} onAccepted={() => setScreen("inProgress")} />}
         {screen === "inProgress" && selectedJob && <JobInProgress key="inProgress" jobId={selectedJob.id} onBack={() => setScreen("feed")} onOpenChat={() => setScreen("chat")} />}
         {screen === "wallet" && <Wallet key="wallet" />}
-        {screen === "chat" && selectedJob && <Chat key="chat" jobId={selectedJob.id} onBack={() => setScreen("inProgress")} />}
+        {screen === "chat" && !selectedJob && <ChatInbox key="chatInbox" onOpenChat={(jobId) => { setSelectedJob({ id: jobId } as any); setScreen("chatThread"); }} />}
+        {screen === "chatThread" && selectedJob && <Chat key="chatThread" jobId={selectedJob.id} onBack={() => setScreen("chat")} />}
         {screen === "portfolio" && <Portfolio key="portfolio" onEditProfile={() => setScreen("editProfile")} onOpenPlans={() => setScreen("plans")} />}
         {screen === "plans" && <Plans key="plans" />}
         {screen === "admin" && profile?.isAdmin && <ReviewQueue key="admin" />}
