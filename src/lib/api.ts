@@ -21,6 +21,7 @@ export const api = {
   requestDeposit: (amountCents: number, proofUrl: string) => invoke("wallet-requests", { action: "request-deposit", amountCents, proofUrl }),
   requestWithdrawal: (amountCents: number) => invoke("wallet-requests", { action: "request-withdrawal", amountCents }),
   resolveWithdrawal: (transactionId: string, approve: boolean) => invoke("wallet-requests", { action: "resolve-withdrawal", transactionId, approve }),
+  listPendingPayments: () => invoke("wallet-requests", { action: "list-pending-payments" }),
   purchaseSubscription: (tier: "basic" | "elite") => invoke("wallet-requests", { action: "purchase-subscription", tier }),
   jobAction: (jobId: string, action: "pause" | "resume" | "mark-submitted" | "post-update", extra?: Record<string, unknown>) => invoke("job-actions", { jobId, action, ...extra }),
   createMilestonePlan: (jobId: string, amounts: number[]) => invoke("milestone-actions", { jobId, action: "create-plan", amounts }),
