@@ -1,30 +1,3 @@
 import { motion, AnimatePresence } from "framer-motion";
-
-interface ToastProps {
-  message: string;
-  visible: boolean;
-  variant?: "default" | "success" | "danger";
-}
-
-// Design.md §5: toasts slide in from top, auto-dismiss after 4s, swipeable.
-export function Toast({ message, visible, variant = "default" }: ToastProps) {
-  const color = { default: "bg-[var(--bg-elevated)] text-[var(--text-primary)]", success: "bg-success text-white", danger: "bg-danger text-white" }[variant];
-  return (
-    <AnimatePresence>
-      {visible && (
-        <motion.div
-          className={`fixed top-4 left-1/2 z-[60] -translate-x-1/2 rounded-xl2 px-4 py-3 text-sm font-medium shadow-lg ${color}`}
-          style={{ boxShadow: "var(--shadow-soft)" }}
-          initial={{ y: -60, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -60, opacity: 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 28 }}
-          drag="y"
-          dragConstraints={{ top: 0, bottom: 0 }}
-        >
-          {message}
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
+interface ToastProps{message:string;visible:boolean;variant?:"default"|"success"|"danger";}
+export function Toast({message,visible,variant="default"}:ToastProps){const color={default:"bg-[var(--bg-elevated)] text-[var(--text-primary)]",success:"bg-success text-white",danger:"bg-danger text-white"}[variant];return <AnimatePresence>{visible&&<motion.div className={`fixed top-4 left-1/2 z-[60] -translate-x-1/2 rounded-xl2 px-4 py-3 text-sm font-medium shadow-lg ${color}`} style={{boxShadow:"var(--shadow-soft)"}} initial={{y:-60,opacity:0}} animate={{y:0,opacity:1}} exit={{y:-60,opacity:0}} transition={{type:"spring",stiffness:300,damping:28}} drag="y" dragConstraints={{top:0,bottom:0}}>{message}</motion.div>}</AnimatePresence>}

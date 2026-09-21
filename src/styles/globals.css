@@ -2,34 +2,4 @@
 @tailwind components;
 @tailwind utilities;
 @import "./tokens.css";
-
-* { -webkit-tap-highlight-color: transparent; }
-
-html, body, #root { height: 100%; }
-
-body {
-  background: var(--bg);
-  color: var(--text-primary);
-  font: 100%/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-
-.tabular-nums { font-variant-numeric: tabular-nums; }
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* App shell: mobile-first single-column phone-width container, matches Design.md mobile-first spec */
-.app-shell {
-  max-width: 480px;
-  margin: 0 auto;
-  min-height: 100vh;
-  background: var(--bg);
-  position: relative;
-}
+*{-webkit-tap-highlight-color:transparent;} html,body,#root{height:100%;} body{background:var(--bg);color:var(--text-primary);font:100%/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}.tabular-nums{font-variant-numeric:tabular-nums}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}.app-shell{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative}
