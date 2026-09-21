@@ -1,7 +1,7 @@
 /**
  * Supabase client. Uses a manual cast for import.meta.env instead of relying
- * on vite/client ambient types — avoids the TS2339 build failure regardless
- * of whether a vite-env.d.ts file is present/committed in the repo.
+ * on vite/client ambient types alone — avoids TS2339 build failures on
+ * environments where vite-env.d.ts isn't picked up for any reason.
  */
 import { createClient } from "@supabase/supabase-js";
 
@@ -12,7 +12,7 @@ const anonKey = env.VITE_SUPABASE_ANON_KEY;
 
 if (!url || !anonKey) {
   console.warn(
-    "[SkillX] Supabase env vars are missing. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel's Environment Variables (Settings → Environment Variables) and redeploy."
+    "[SkillX] Supabase env vars are missing. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (Vercel: Settings -> Environment Variables) and redeploy."
   );
 }
 

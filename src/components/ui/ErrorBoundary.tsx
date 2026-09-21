@@ -3,8 +3,6 @@ import { Component, type ReactNode } from "react";
 interface Props { children: ReactNode; }
 interface State { error: Error | null; }
 
-// Without this, one screen throwing silently blanks the entire app — this
-// scopes failures to a visible message instead of a dead white page.
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null };
 
