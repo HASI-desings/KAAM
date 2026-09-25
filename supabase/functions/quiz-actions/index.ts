@@ -11,25 +11,23 @@ Deno.serve(async (req) => {
     const admin = getAdminClient();
 
     if (action === "get-questions") {
-      const { data, error } = await admin.from("quiz_questions").select("id, question, options").eq("category_id", categoryId).order("created_at");
+      const { data, error } = await admin.from("skill_quiz_questions").select("id, question, options").eq("category_id", categoryId).order("id");
       if (error) return jsonResponse({ error: error.message }, 500);
-      return jsonResponse({ questions: data ?? [] });
+      if (!data?.length) return jsonResponse({ error: "No skill verification quiz is configured for this category yet." }, 404);
+      return jsonResponse({ questions: data });
     }
 
     if (action === "submit") {
-      const { data: questions, error } = await admin.from("quiz_questions").select("id, correct_option").eq("category_id", categoryId);
+      const { data: questions, error } = await admin.from("skill_quiz_questions").select("id, correct_index").eq("category_id", categoryId);
       if (error) return jsonResponse({ error: error.message }, 500);
-      if (!questions?.length) return jsonResponse({ error: "No quiz is configured for this category yet" }, 404);
-      let correct = 0;
-      for (const q of questions) if (Number(answers?.[q.id]) === q.correct_option) correct++;
+      if (!questions?.length) return jsonResponse({ error: "No skill verification quiz is configured for this category yet." }, 404);
+      const correct = questions.reduce((n, q) => n + (Number(answers?.[q.id]) === Number(q.correct_index) ? 1 : 0), 0);
       const score = Math.round((correct / questions.length) * 100);
       const passed = score >= 70;
-      await admin.from("skill_verifications").insert({ user_id: auth.user.id, category_id: categoryId, passed, score });
+      const { error: insertError } = await admin.from("skill_verifications").insert({ user_id: auth.user.id, category_id: categoryId, passed, score });
+      if (insertError) return jsonResponse({ error: insertError.message }, 500);
       return jsonResponse({ passed, score });
     }
-
     return jsonResponse({ error: "Unknown action" }, 400);
-  } catch (e) {
-    return jsonResponse({ error: (e as Error).message }, 500);
-  }
+  } catch (e) { return jsonResponse({ error: (e as Error).message }, 500); }
 });
